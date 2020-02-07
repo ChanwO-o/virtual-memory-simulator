@@ -42,14 +42,15 @@ int addrtransoff(int addr)
 //and does relevant calculations.
 void accessptable(int addr, int offset)
 {
-    printf("%d %d\n", addr, offset);
-    printptable();
+    //printf("%d %d\n", addr, offset);
+    //printptable();
 
     struct pt_entry entry = ptable[addr];
  
     //if not valid then access disk
     if (entry.valid == 0)
     {
+    	printf("Page Fault Has Occurred\n");
         ++globalcounter;
         //access disk due to page fault
         copypage(addr);
@@ -78,11 +79,40 @@ int mainmemisfull()
 int getnextindex()
 {
 	++memindex;
-	if (memindex == 4)
+	if (memindex >= 4)
 	{
 		memindex = 0;
 	}
 	return memindex;
+}
+
+int getfifoindex()
+{
+	int lowestcounter;
+	int lowestindex;
+	int checkedlowest = 0;
+	int i;
+	for (i = 0; i < PTSIZE; i++)
+	{
+		if (ptable[i].valid == 1)
+		{
+			if (checkedlowest == 0)
+			{
+				checkedlowest = 1;
+				lowestcounter = ptable[i].counter;
+				lowestindex = i;
+			}
+			else
+			{
+				if (lowestcounter > ptable[i].counter)
+				{
+					lowestcounter = ptable[i].counter;
+					lowestindex = i;
+				}
+			}
+		}
+	}
+	return lowestindex;
 }
 
 int getmainmemindex()
@@ -92,15 +122,9 @@ int getmainmemindex()
 	}
 	else
 	{
+		printf("Main memory is full\n");
+		return getfifoindex();
 	}
-    /*
-    int currentcounter = globalcounter;
-    int i;
-    for (i = 0; i < PTSIZE; ++i)
-    {
-        +
-    }
-    */
 }
 
 //copy index address in disk into main memory
@@ -111,6 +135,10 @@ void copypage(int addr)
     int targetindex = getmainmemindex();
     printf("TINDEX: %d\n", targetindex);
 
+    //remove page table from main memory
+    ptable[targetindex].valid = 0;
+
+    //add the new page table to main memory
     ptable[addr].valid = 1;
     ptable[addr].pgnum = targetindex;
     ptable[addr].dirty = 0;
@@ -123,10 +151,6 @@ void copypage(int addr)
     }
 
     printptable();
-    printmainmem(0);
-    printmainmem(1);
-    printmainmem(2);
-    printmainmem(3);
 
     // int i;
     // for (i = 0; i < DATASIZE; i++)
@@ -263,7 +287,12 @@ void printptable()
 	printf("printptable()\n");
 	int i;
 	for (i = 0; i < PTSIZE; ++i) {
-		printf("%d:%d:%d:%d\n", ptable[i].entry, ptable[i].valid, ptable[i].dirty, ptable[i].pgnum);
+		printf("%d:%d:%d:%d:%d\n", 
+			ptable[i].entry, 
+			ptable[i].valid, 
+			ptable[i].dirty, 
+			ptable[i].pgnum,
+			ptable[i].counter);
 	}
 }
 
