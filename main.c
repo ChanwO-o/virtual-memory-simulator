@@ -11,6 +11,7 @@ struct pt_entry
     int valid;
     int dirty;
     int pgnum;
+    int counter;
 };
 
 struct page
@@ -22,6 +23,10 @@ struct page
 struct page mainmem[MMSIZE];
 struct page diskmem[DISKSIZE];
 struct pt_entry ptable[PTSIZE];
+
+int isLRU = 1;
+int memindex = -1;
+int globalcounter = 0;
 
 int addrtrans(int addr)
 {
@@ -37,13 +42,18 @@ int addrtransoff(int addr)
 //and does relevant calculations.
 void accessptable(int addr, int offset)
 {
+    printf("%d %d\n", addr, offset);
+    printptable();
+
     struct pt_entry entry = ptable[addr];
  
     //if not valid then access disk
     if (entry.valid == 0)
     {
+        ++globalcounter;
         //access disk due to page fault
-    
+        copypage(addr);
+
     }
     //if valid access main memory
     else
@@ -52,13 +62,82 @@ void accessptable(int addr, int offset)
     }
 }
 
+int mainmemisfull()
+{
+	int i;
+	int validcount = 0;
+	for (i = 0; i < PTSIZE; ++i) {
+		if (ptable[i].valid == 1)
+			validcount++;
+	}
+	if (validcount >= 4)
+		return 1;
+	return 0;
+}
+
+int getnextindex()
+{
+	++memindex;
+	if (memindex == 4)
+	{
+		memindex = 0;
+	}
+	return memindex;
+}
+
+int getmainmemindex()
+{
+	if (mainmemisfull() == 0) {
+		return getnextindex();
+	}
+	else
+	{
+	}
+    /*
+    int currentcounter = globalcounter;
+    int i;
+    for (i = 0; i < PTSIZE; ++i)
+    {
+        +
+    }
+    */
+}
+
 //copy index address in disk into main memory
 void copypage(int addr)
 {
-    struct page pg = diskmem[addr];
-    pg.originaddr = addr;
+	printf("INDSIDE COPYPAGE\n");
 
+    int targetindex = getmainmemindex();
+    printf("TINDEX: %d\n", targetindex);
 
+    ptable[addr].valid = 1;
+    ptable[addr].pgnum = targetindex;
+    ptable[addr].dirty = 0;
+    ptable[addr].counter = globalcounter;
+
+    int i;
+    for (i = 0; i < DATASIZE; i++)
+    {
+    	mainmem[targetindex].data[i] = diskmem[addr].data[i];
+    }
+
+    printptable();
+    printmainmem(0);
+    printmainmem(1);
+    printmainmem(2);
+    printmainmem(3);
+
+    // int i;
+    // for (i = 0; i < DATASIZE; i++)
+    // {
+    //     mainmem[targetindex].data;
+    // }
+
+    // diskmem[addr].data
+    
+    // struct page pg = diskmem[addr];
+    // pg.originaddr = addr;
 }
 
 void parsecmd(char * buf)
@@ -70,7 +149,16 @@ void parsecmd(char * buf)
     if (strcmp(cmd, "read") == 0)
     {
         printf("Inside read\n");
-        strtok(NULL, " ");
+        cmd = strtok(NULL, " ");
+        if (cmd != NULL)
+        {
+            int ppn = atoi(cmd);
+            printf("%d\n", ppn);
+            if (ppn >= 0 && ppn <= 31)
+            {
+                accessptable(addrtrans(ppn), addrtransoff(ppn));
+            }
+        }
     }
     else if (strcmp(cmd, "write") == 0)
     {
@@ -140,6 +228,7 @@ void initializeptable()
 		ptable[i].valid = 0;
 		ptable[i].dirty = 0;
 		ptable[i].pgnum = -1;
+        ptable[i].counter = 0;
 	}
 }
 
@@ -178,7 +267,6 @@ void printptable()
 	}
 }
 
-
 int main()
 {
     char buf[80];
@@ -202,8 +290,7 @@ int main()
             if (strcmp(buf, "quit\n") == 0)
                 break;
 
-            parsecmd(buf);
-     
+            parsecmd(buf);    
         }
     }
 
