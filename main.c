@@ -23,8 +23,6 @@ struct page mainmem[MMSIZE];
 struct page diskmem[DISKSIZE];
 struct pt_entry ptable[PTSIZE];
 
-
-
 int addrtrans(int addr)
 {
     return addr / 4;
@@ -63,7 +61,6 @@ void copypage(int addr)
 
 }
 
-
 void parsecmd(char * buf)
 {
     char * cmd;
@@ -73,29 +70,44 @@ void parsecmd(char * buf)
     if (strcmp(cmd, "read") == 0)
     {
         printf("Inside read\n");
-        cmd = strtok(buf, NULL);
+        strtok(NULL, " ");
     }
     else if (strcmp(cmd, "write") == 0)
     {
         printf("Write\n");
-        cmd = strtok(buf, NULL);
+        cmd = strtok(NULL, " ");
     }
     else if (strcmp(cmd, "showmain") == 0)
     {
         printf("Showmain\n");
-        cmd = strtok(buf, NULL);
+        cmd = strtok(NULL, " ");
+        if (cmd != NULL)
+        {
+            int ppn = atoi(cmd);
+            if (ppn >= 0 && ppn <= MMSIZE)
+                printmainmem(ppn);
+        }
 
     }
     else if (strcmp(cmd, "showdisk") == 0)
     {
         printf("Showdisk\n");
-        cmd = strtok(buf, NULL);
-  
+        cmd = strtok(NULL, " ");
+        if (cmd != NULL)
+        {
+            int dpn = atoi(cmd);
+            if (dpn >= 0 && dpn <= DISKSIZE)
+                printdiskmem(dpn);
+        }
     }
     else if (strcmp(cmd, "showptable") == 0)
     {
         printf("Showptable\n");
-  
+        cmd = strtok(NULL, " ");
+        if (cmd == NULL)
+        {
+            printptable();   
+        }
     }
 }
 
@@ -134,6 +146,10 @@ void initializeptable()
 void printmainmem(int pagenum)
 {
 	printf("printmainmem()\n");
+    
+    if (pagenum < 0 || pagenum >= MMSIZE)
+        return;
+
 	int i;
 	for (i = 0; i < DATASIZE; ++i) {
 		printf("%d:%d\n", pagenum * DATASIZE + i, mainmem->data[pagenum]);
@@ -143,7 +159,11 @@ void printmainmem(int pagenum)
 void printdiskmem(int pagenum)
 {
 	printf("printdiskmem()\n");
-	int i;
+
+    if (pagenum < 0 || pagenum >= DISKSIZE)
+        return;
+    
+    int i;
 	for (i = 0; i < DATASIZE; ++i) {
 		printf("%d:%d\n", pagenum * DATASIZE + i, diskmem->data[pagenum]);
 	}
@@ -167,23 +187,25 @@ int main()
 	initializediskmem();
 	initializeptable();
 	
+    /*
 	printmainmem(0);
 	printdiskmem(0);
 	printptable();
-    
-    // while (1)
-    // {
-        // printf("> ");
+    */
 
-        // if (fgets(buf, sizeof(buf), stdin) != NULL)
-        // { 
-            // if (strcmp(buf, "quit\n") == 0)
-                // break;
+    while (1)
+    {
+        printf("> ");
 
-            // // parsecmd(buf);
+        if (fgets(buf, sizeof(buf), stdin) != NULL)
+        { 
+            if (strcmp(buf, "quit\n") == 0)
+                break;
+
+            parsecmd(buf);
      
-        // }
-    // }
+        }
+    }
 
     return 0;
 }
