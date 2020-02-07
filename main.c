@@ -1,8 +1,9 @@
 #include <stdio.h>
 
-#define PTSIZE 8
-#define DISKSIZE 8
 #define MMSIZE 4
+#define DISKSIZE 8
+#define PTSIZE 8
+#define DATASIZE 4
 
 struct pt_entry
 {
@@ -18,11 +19,11 @@ struct page
     int originaddr;
 };
 
+struct page mainmem[MMSIZE];
+struct page diskmem[DISKSIZE];
 struct pt_entry ptable[PTSIZE];
 
-struct page diskmem[DISKSIZE];
 
-struct page mainmem[MMSIZE];
 
 int addrtrans(int addr)
 {
@@ -63,9 +64,6 @@ void copypage(int addr)
 }
 
 
-
-
-
 void parsecmd(char * buf)
 {
     char * cmd;
@@ -101,25 +99,91 @@ void parsecmd(char * buf)
     }
 }
 
+void initializemainmem()
+{
+	int i;
+	for (i = 0; i < MMSIZE; ++i) {
+		int j;
+		for (j = 0; j < DATASIZE; ++j)
+			mainmem[i].data[j] = -1;
+	}
+}
+
+void initializediskmem()
+{
+	int i;
+	for (i = 0; i < DISKSIZE; ++i) {
+		int j;
+		for (j = 0; j < DATASIZE; ++j)
+			diskmem[i].data[j] = -1;
+	}
+}
+
+void initializeptable()
+{
+	int i;
+	for (i = 0; i < PTSIZE; ++i)
+	{
+		ptable[i].entry = i;
+		ptable[i].valid = 0;
+		ptable[i].dirty = 0;
+		ptable[i].pgnum = -1;
+	}
+}
+
+void printmainmem(int pagenum)
+{
+	printf("printmainmem()\n");
+	int i;
+	for (i = 0; i < DATASIZE; ++i) {
+		printf("%d:%d\n", pagenum * DATASIZE + i, mainmem->data[pagenum]);
+	}
+}
+
+void printdiskmem(int pagenum)
+{
+	printf("printdiskmem()\n");
+	int i;
+	for (i = 0; i < DATASIZE; ++i) {
+		printf("%d:%d\n", pagenum * DATASIZE + i, diskmem->data[pagenum]);
+	}
+}
+
+void printptable()
+{
+	printf("printptable()\n");
+	int i;
+	for (i = 0; i < PTSIZE; ++i) {
+		printf("%d:%d:%d:%d\n", ptable[i].entry, ptable[i].valid, ptable[i].dirty, ptable[i].pgnum);
+	}
+}
+
 
 int main()
 {
     char buf[80];
-    char * uinput;
+	
+	initializemainmem();
+	initializediskmem();
+	initializeptable();
+	
+	printmainmem(0);
+	printdiskmem(0);
+	printptable();
     
-    while (1)
-    {
-        printf("> ");
+    // while (1)
+    // {
+        // printf("> ");
 
-        if (fgets(buf, sizeof(buf), stdin) != NULL)
-        { 
-            if (strcmp(buf, "quit\n") == 0)
-                break;
+        // if (fgets(buf, sizeof(buf), stdin) != NULL)
+        // { 
+            // if (strcmp(buf, "quit\n") == 0)
+                // break;
 
-            parsecmd(buf);
+            // // parsecmd(buf);
      
-        }
-    }
+        // }
+    // }
 
     return 0;
 }
