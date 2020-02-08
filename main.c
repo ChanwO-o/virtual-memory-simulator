@@ -60,14 +60,16 @@ void accessptable(int addr, int offset, int isWrite, int writeval)
     {
         //access main memory
         printf("Page table already in memory\n");
-
+        int targetindex = entry.pgnum;
         if (isWrite)
         {
-        	int targetindex = entry.pgnum;
         	ptable[addr].dirty = 1;
         	mainmem[targetindex].data[offset] = writeval;
         }
-
+        else
+        {
+        	printf("%d\n", mainmem[targetindex].data[offset]);
+        }
     }
 }
 
@@ -134,17 +136,18 @@ int getmainmemindex(int isWrite)
 		ptable[ptindex].valid = 0;
 		int targetindex = ptable[ptindex].pgnum;
 
-		if (isWrite)
-		{
+		// if (isWrite)
+		// {
 			if (ptable[ptindex].dirty)
 			{	
 				int i;
 				for (i = 0; i < DATASIZE; i++)
 				{
+					printf("writing to disk index %d the value %d\n", ptindex, mainmem[targetindex].data[i]);
 					diskmem[ptindex].data[i] = mainmem[targetindex].data[i];
 				}
 			}
-		}
+		// }
 		return targetindex;
 	}
 }
@@ -169,8 +172,13 @@ void copypage(int addr, int offset, int isWrite, int writeval)
 
     if (isWrite)
     {
+    	printf("writing to mainmemory index %d the value %d\n", targetindex, writeval);
     	ptable[addr].dirty = 1;
     	mainmem[targetindex].data[offset] = writeval;
+    }
+    else
+    {
+    	printf("%d\n", mainmem[targetindex].data[offset]);
     }
 
     printptable();
@@ -184,7 +192,6 @@ void parsecmd(char * buf)
 
     if (strcmp(cmd, "read") == 0)
     {
-        printf("Inside read\n");
         cmd = strtok(NULL, " ");
         if (cmd != NULL)
         {
@@ -198,7 +205,6 @@ void parsecmd(char * buf)
     }
     else if (strcmp(cmd, "write") == 0)
     {
-        printf("Write\n");
         cmd = strtok(NULL, " ");
         if (cmd != NULL)
         {
@@ -215,7 +221,6 @@ void parsecmd(char * buf)
     }
     else if (strcmp(cmd, "showmain") == 0)
     {
-        printf("Showmain\n");
         cmd = strtok(NULL, " ");
         if (cmd != NULL)
         {
@@ -227,7 +232,6 @@ void parsecmd(char * buf)
     }
     else if (strcmp(cmd, "showdisk") == 0)
     {
-        printf("Showdisk\n");
         cmd = strtok(NULL, " ");
         if (cmd != NULL)
         {
@@ -238,7 +242,6 @@ void parsecmd(char * buf)
     }
     else if (strcmp(cmd, "showptable") == 0)
     {
-        printf("Showptable\n");
         cmd = strtok(NULL, " ");
         if (cmd == NULL)
         {
@@ -282,7 +285,6 @@ void initializeptable()
 
 void printmainmem(int pagenum)
 {
-	printf("printmainmem()\n");
     
     if (pagenum < 0 || pagenum >= MMSIZE)
         return;
@@ -295,7 +297,6 @@ void printmainmem(int pagenum)
 
 void printdiskmem(int pagenum)
 {
-	printf("printdiskmem()\n");
 
     if (pagenum < 0 || pagenum >= DISKSIZE)
         return;
@@ -308,7 +309,6 @@ void printdiskmem(int pagenum)
 
 void printptable()
 {
-	printf("printptable()\n");
 	int i;
 	for (i = 0; i < PTSIZE; ++i) {
 		printf("%d:%d:%d:%d:%d\n", 
