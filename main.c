@@ -52,7 +52,7 @@ void accessptable(int addr, int offset)
     {
     	printf("Page Fault Has Occurred\n");
         ++globalcounter;
-        //access disk due to page fault
+        //copy page from virtual memory to main memory
         copypage(addr);
 
     }
@@ -60,6 +60,7 @@ void accessptable(int addr, int offset)
     else
     {
         //access main memory
+        printf("Page table already in memory\n");
     }
 }
 
@@ -122,21 +123,18 @@ int getmainmemindex()
 	}
 	else
 	{
-		printf("Main memory is full\n");
-		return getfifoindex();
+		int targetindex = getfifoindex();
+		printf("Main memory is full; evicting index %d\n", targetindex);
+		ptable[targetindex].valid = 0;
+		return ptable[targetindex].pgnum;
 	}
 }
 
 //copy index address in disk into main memory
 void copypage(int addr)
 {
-	printf("INDSIDE COPYPAGE\n");
-
     int targetindex = getmainmemindex();
     printf("TINDEX: %d\n", targetindex);
-
-    //remove page table from main memory
-    ptable[targetindex].valid = 0;
 
     //add the new page table to main memory
     ptable[addr].valid = 1;
@@ -151,17 +149,6 @@ void copypage(int addr)
     }
 
     printptable();
-
-    // int i;
-    // for (i = 0; i < DATASIZE; i++)
-    // {
-    //     mainmem[targetindex].data;
-    // }
-
-    // diskmem[addr].data
-    
-    // struct page pg = diskmem[addr];
-    // pg.originaddr = addr;
 }
 
 void parsecmd(char * buf)
@@ -188,6 +175,15 @@ void parsecmd(char * buf)
     {
         printf("Write\n");
         cmd = strtok(NULL, " ");
+        if (cmd != NULL)
+        {
+        	int ppn = atoi(cmd);
+        	printf("%d\n", ppn);
+        	if (ppn >= 0 && ppn <= 31)
+            {
+                accessptable(addrtrans(ppn), addrtransoff(ppn));
+            }
+        }
     }
     else if (strcmp(cmd, "showmain") == 0)
     {
@@ -251,7 +247,7 @@ void initializeptable()
 		ptable[i].entry = i;
 		ptable[i].valid = 0;
 		ptable[i].dirty = 0;
-		ptable[i].pgnum = -1;
+		ptable[i].pgnum = i;
         ptable[i].counter = 0;
 	}
 }
