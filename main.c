@@ -180,14 +180,12 @@ void copypage(int addr, int offset, int isWrite, int writeval)
     {
     	printf("%d\n", mainmem[targetindex].data[offset]);
     }
-
     printptable();
 }
 
 void parsecmd(char * buf)
 {
     char * cmd;
-
     cmd = strtok(buf, " \n");
 
     if (strcmp(cmd, "read") == 0)
@@ -285,39 +283,32 @@ void initializeptable()
 
 void printmainmem(int pagenum)
 {
-    
     if (pagenum < 0 || pagenum >= MMSIZE)
         return;
-
 	int i;
-	for (i = 0; i < DATASIZE; ++i) {
+	for (i = 0; i < DATASIZE; ++i)
 		printf("%d:%d\n", pagenum * DATASIZE + i, mainmem[pagenum].data[i]);
-	}
 }
 
 void printdiskmem(int pagenum)
 {
-
     if (pagenum < 0 || pagenum >= DISKSIZE)
         return;
-    
     int i;
-	for (i = 0; i < DATASIZE; ++i) {
+	for (i = 0; i < DATASIZE; ++i)
 		printf("%d:%d\n", pagenum * DATASIZE + i, diskmem[pagenum].data[i]);
-	}
 }
 
 void printptable()
 {
 	int i;
-	for (i = 0; i < PTSIZE; ++i) {
+	for (i = 0; i < PTSIZE; ++i)
 		printf("%d:%d:%d:%d:%d\n", 
 			ptable[i].entry, 
 			ptable[i].valid, 
 			ptable[i].dirty, 
 			ptable[i].pgnum,
 			ptable[i].counter);
-	}
 }
 
 int main()
@@ -327,12 +318,6 @@ int main()
 	initializemainmem();
 	initializediskmem();
 	initializeptable();
-	
-    /*
-	printmainmem(0);
-	printdiskmem(0);
-	printptable();
-    */
 
     while (1)
     {
@@ -342,10 +327,10 @@ int main()
         { 
             if (strcmp(buf, "quit\n") == 0)
                 break;
-
+			else if (strcmp(buf, "\n") == 0)
+				continue;
             parsecmd(buf);    
         }
     }
-
     return 0;
 }
