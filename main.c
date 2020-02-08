@@ -40,7 +40,7 @@ int addrtransoff(int addr)
 
 //accesses the address and offset in ptable
 //and does relevant calculations.
-void accessptable(int addr, int offset)
+void accessptable(int addr, int offset, int isWrite, int writeval)
 {
     //printf("%d %d\n", addr, offset);
     //printptable();
@@ -53,14 +53,21 @@ void accessptable(int addr, int offset)
     	printf("Page Fault Has Occurred\n");
         ++globalcounter;
         //copy page from virtual memory to main memory
-        copypage(addr);
-
+        copypage(addr, offset, isWrite, writeval);
     }
     //if valid access main memory
     else
     {
         //access main memory
         printf("Page table already in memory\n");
+
+        if (isWrite)
+        {
+        	int targetindex = entry.pgnum;
+        	ptable[addr].dirty = 1;
+        	mainmem[targetindex].data[offset] = writeval;
+        }
+
     }
 }
 
@@ -116,24 +123,36 @@ int getfifoindex()
 	return lowestindex;
 }
 
-int getmainmemindex()
+int getmainmemindex(int isWrite)
 {
 	if (mainmemisfull() == 0) {
 		return getnextindex();
 	}
 	else
 	{
-		int targetindex = getfifoindex();
-		printf("Main memory is full; evicting index %d\n", targetindex);
-		ptable[targetindex].valid = 0;
-		return ptable[targetindex].pgnum;
+		int ptindex = getfifoindex();
+		ptable[ptindex].valid = 0;
+		int targetindex = ptable[ptindex].pgnum;
+
+		if (isWrite)
+		{
+			if (ptable[ptindex].dirty)
+			{	
+				int i;
+				for (i = 0; i < DATASIZE; i++)
+				{
+					diskmem[ptindex].data[i] = mainmem[targetindex].data[i];
+				}
+			}
+		}
+		return targetindex;
 	}
 }
 
 //copy index address in disk into main memory
-void copypage(int addr)
+void copypage(int addr, int offset, int isWrite, int writeval)
 {
-    int targetindex = getmainmemindex();
+    int targetindex = getmainmemindex(isWrite);
     printf("TINDEX: %d\n", targetindex);
 
     //add the new page table to main memory
@@ -146,6 +165,12 @@ void copypage(int addr)
     for (i = 0; i < DATASIZE; i++)
     {
     	mainmem[targetindex].data[i] = diskmem[addr].data[i];
+    }
+
+    if (isWrite)
+    {
+    	ptable[addr].dirty = 1;
+    	mainmem[targetindex].data[offset] = writeval;
     }
 
     printptable();
@@ -167,7 +192,7 @@ void parsecmd(char * buf)
             printf("%d\n", ppn);
             if (ppn >= 0 && ppn <= 31)
             {
-                accessptable(addrtrans(ppn), addrtransoff(ppn));
+                accessptable(addrtrans(ppn), addrtransoff(ppn), 0, NULL);
             }
         }
     }
@@ -181,7 +206,10 @@ void parsecmd(char * buf)
         	printf("%d\n", ppn);
         	if (ppn >= 0 && ppn <= 31)
             {
-                accessptable(addrtrans(ppn), addrtransoff(ppn));
+            	cmd = strtok(NULL, " ");
+            	int writeval = atoi(cmd);
+            	printf("WRITEVAL: %d\n", writeval);
+                accessptable(addrtrans(ppn), addrtransoff(ppn), 1, writeval);
             }
         }
     }
@@ -261,7 +289,7 @@ void printmainmem(int pagenum)
 
 	int i;
 	for (i = 0; i < DATASIZE; ++i) {
-		printf("%d:%d\n", pagenum * DATASIZE + i, mainmem->data[pagenum]);
+		printf("%d:%d\n", pagenum * DATASIZE + i, mainmem[pagenum].data[i]);
 	}
 }
 
@@ -274,7 +302,7 @@ void printdiskmem(int pagenum)
     
     int i;
 	for (i = 0; i < DATASIZE; ++i) {
-		printf("%d:%d\n", pagenum * DATASIZE + i, diskmem->data[pagenum]);
+		printf("%d:%d\n", pagenum * DATASIZE + i, diskmem[pagenum].data[i]);
 	}
 }
 
