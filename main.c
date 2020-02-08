@@ -24,7 +24,7 @@ struct page mainmem[MMSIZE];
 struct page diskmem[DISKSIZE];
 struct pt_entry ptable[PTSIZE];
 
-int isLRU = 1;
+int isLRU = 0;
 int memindex = -1;
 int globalcounter = 0;
 
@@ -125,6 +125,35 @@ int getfifoindex()
 	return lowestindex;
 }
 
+int getlruindex()
+{
+	int lowestcounter;
+	int lowestindex;
+	int checkedlowest = 0;
+	int i;
+	for (i = 0; i < PTSIZE; i++)
+	{
+		if (ptable[i].valid == 1)
+		{
+			if (checkedlowest == 0)
+			{
+				checkedlowest = 1;
+				lowestcounter = ptable[i].counter;
+				lowestindex = i;
+			}
+			else
+			{
+				if (lowestcounter > ptable[i].counter)
+				{
+					lowestcounter = ptable[i].counter;
+					lowestindex = i;
+				}
+			}
+		}
+	}
+	return lowestindex;
+}
+
 int getmainmemindex(int isWrite)
 {
 	if (mainmemisfull() == 0) {
@@ -132,7 +161,11 @@ int getmainmemindex(int isWrite)
 	}
 	else
 	{
-		int ptindex = getfifoindex();
+		int ptindex;
+		if (isLRU)
+			ptindex = getlruindex();
+		else
+			ptindex = getfifoindex();
 		ptable[ptindex].valid = 0;
 		int targetindex = ptable[ptindex].pgnum;
 
@@ -311,8 +344,11 @@ void printptable()
 			ptable[i].counter);
 }
 
-int main()
+int main(int argc, char* argv[])
 {
+	if (argc == 2 && strcmp(argv[1], "LRU") == 0)
+		isLRU = 1;
+	
     char buf[80];
 	
 	initializemainmem();
