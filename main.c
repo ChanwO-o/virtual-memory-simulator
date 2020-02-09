@@ -62,7 +62,6 @@ void accessptable(int addr, int offset, int isWrite, int writeval)
 		}
 		
         //access main memory
-        printf("Page table already in memory\n");
         int targetindex = entry.pgnum;
 		if (isWrite) // write data into mainmem
         {
@@ -167,19 +166,15 @@ int getmainmemindex(int isWrite)
 			ptindex = getfifoindex();
 		ptable[ptindex].valid = 0;
 		int targetindex = ptable[ptindex].pgnum;
-
-		// if (isWrite)
-		// {
-			if (ptable[ptindex].dirty)
-			{	
-				int i;
-				for (i = 0; i < DATASIZE; i++)
-				{
-					printf("writing to disk index %d the value %d\n", ptindex, mainmem[targetindex].data[i]);
-					diskmem[ptindex].data[i] = mainmem[targetindex].data[i];
-				}
+		
+		if (ptable[ptindex].dirty)
+		{	
+			int i;
+			for (i = 0; i < DATASIZE; i++)
+			{
+				diskmem[ptindex].data[i] = mainmem[targetindex].data[i];
 			}
-		// }
+		}
 		return targetindex;
 	}
 }
@@ -188,7 +183,6 @@ int getmainmemindex(int isWrite)
 void copypage(int addr, int offset, int isWrite, int writeval)
 {
     int targetindex = getmainmemindex(isWrite);
-    printf("TINDEX: %d\n", targetindex);
 
     //add the new page table to main memory
     ptable[addr].valid = 1;
@@ -204,7 +198,6 @@ void copypage(int addr, int offset, int isWrite, int writeval)
 
     if (isWrite)
     {
-    	printf("writing to mainmemory index %d the value %d\n", targetindex, writeval);
     	ptable[addr].dirty = 1;
     	mainmem[targetindex].data[offset] = writeval;
     }
@@ -226,7 +219,6 @@ void parsecmd(char * buf)
         if (cmd != NULL)
         {
             int ppn = atoi(cmd);
-            printf("%d\n", ppn);
             if (ppn >= 0 && ppn <= 31)
             {
                 accessptable(addrtrans(ppn), addrtransoff(ppn), 0, NULL);
@@ -239,12 +231,10 @@ void parsecmd(char * buf)
         if (cmd != NULL)
         {
         	int ppn = atoi(cmd);
-        	printf("%d\n", ppn);
         	if (ppn >= 0 && ppn <= 31)
             {
             	cmd = strtok(NULL, " ");
             	int writeval = atoi(cmd);
-            	printf("WRITEVAL: %d\n", writeval);
                 accessptable(addrtrans(ppn), addrtransoff(ppn), 1, writeval);
             }
         }
@@ -335,12 +325,11 @@ void printptable()
 {
 	int i;
 	for (i = 0; i < PTSIZE; ++i)
-		printf("%d:%d:%d:%d:%d\n", 
+		printf("%d:%d:%d:%d\n", 
 			ptable[i].entry, 
 			ptable[i].valid, 
 			ptable[i].dirty, 
-			ptable[i].pgnum,
-			ptable[i].counter);
+			ptable[i].pgnum;
 }
 
 int main(int argc, char* argv[])
