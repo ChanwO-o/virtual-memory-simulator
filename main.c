@@ -42,11 +42,8 @@ int addrtransoff(int addr)
 //and does relevant calculations.
 void accessptable(int addr, int offset, int isWrite, int writeval)
 {
-    //printf("%d %d\n", addr, offset);
-    //printptable();
-
     struct pt_entry entry = ptable[addr];
- 
+	
     //if not valid then access disk
     if (entry.valid == 0)
     {
@@ -58,15 +55,21 @@ void accessptable(int addr, int offset, int isWrite, int writeval)
     //if valid access main memory
     else
     {
+		//increment counter if using LRU
+		if (isLRU) {
+			++globalcounter;
+			ptable[addr].counter = globalcounter;
+		}
+		
         //access main memory
         printf("Page table already in memory\n");
         int targetindex = entry.pgnum;
-        if (isWrite)
+		if (isWrite) // write data into mainmem
         {
         	ptable[addr].dirty = 1;
         	mainmem[targetindex].data[offset] = writeval;
         }
-        else
+        else // just read value
         {
         	printf("%d\n", mainmem[targetindex].data[offset]);
         }
@@ -98,10 +101,8 @@ int getnextindex()
 
 int getfifoindex()
 {
-	int lowestcounter;
-	int lowestindex;
+	int lowestcounter, lowestindex, i;
 	int checkedlowest = 0;
-	int i;
 	for (i = 0; i < PTSIZE; i++)
 	{
 		if (ptable[i].valid == 1)
@@ -127,10 +128,8 @@ int getfifoindex()
 
 int getlruindex()
 {
-	int lowestcounter;
-	int lowestindex;
+	int lowestcounter, lowestindex, i;
 	int checkedlowest = 0;
-	int i;
 	for (i = 0; i < PTSIZE; i++)
 	{
 		if (ptable[i].valid == 1)
