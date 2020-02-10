@@ -168,13 +168,15 @@ int getmainmemindex(int isWrite)
 		int targetindex = ptable[ptindex].pgnum;
 		
 		if (ptable[ptindex].dirty)
-		{	
+		{
 			int i;
 			for (i = 0; i < DATASIZE; i++)
 			{
 				diskmem[ptindex].data[i] = mainmem[targetindex].data[i];
 			}
+			ptable[ptindex].dirty = 0;
 		}
+		ptable[ptindex].pgnum = ptindex; // reset pagenum to its original page on disk
 		return targetindex;
 	}
 }
@@ -205,7 +207,7 @@ void copypage(int addr, int offset, int isWrite, int writeval)
     {
     	printf("%d\n", mainmem[targetindex].data[offset]);
     }
-    printptable();
+    // printptable();
 }
 
 void parsecmd(char * buf)
@@ -329,7 +331,7 @@ void printptable()
 			ptable[i].entry, 
 			ptable[i].valid, 
 			ptable[i].dirty, 
-			ptable[i].pgnum;
+			ptable[i].pgnum);
 }
 
 int main(int argc, char* argv[])
