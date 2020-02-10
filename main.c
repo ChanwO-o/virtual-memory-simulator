@@ -214,6 +214,9 @@ void parsecmd(char * buf)
 {
     char * cmd;
     cmd = strtok(buf, " \n");
+	
+	if (cmd == NULL)
+		return;
 
     if (strcmp(cmd, "read") == 0)
     {
@@ -355,7 +358,7 @@ int main(int argc, char* argv[])
                 break;
 			else if (strcmp(buf, "\n") == 0)
 				continue;
-            parsecmd(buf);    
+            parsecmd(buf);
         }
     }
     return 0;
